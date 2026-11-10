@@ -1,2 +1,0 @@
-[target.i686-unknown-linux-gnu]
-rustflags = ["-C", "link-arg=-m32"]
