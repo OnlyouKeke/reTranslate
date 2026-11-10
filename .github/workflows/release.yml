@@ -17,6 +17,7 @@ jobs:
     runs-on: ubuntu-latest
     outputs:
       release_tag: ${{ steps.version.outputs.release_tag }}
+      raw_version: ${{ steps.version.outputs.raw_version }}
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
@@ -31,13 +32,26 @@ jobs:
           else
             TAG="v$VERSION"
           fi
-          echo "Resolved release tag: $TAG"
+          echo "Resolved release tag: $TAG (version: $VERSION)"
           echo "release_tag=$TAG" >> $GITHUB_OUTPUT
+          echo "raw_version=$VERSION" >> $GITHUB_OUTPUT
 
   build-windows:
-    name: Build & Package Windows (MSI + Portable ZIP)
+    name: Build & Package Windows (${{ matrix.artifact }})
     needs: [prepare-release]
     runs-on: windows-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - target: x86_64-pc-windows-msvc
+            arch: x64
+            win64: yes
+            artifact: windows-x64
+          - target: aarch64-pc-windows-msvc
+            arch: arm64
+            win64: yes
+            artifact: windows-arm64
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
@@ -45,66 +59,100 @@ jobs:
       - name: Install Rust toolchain
         uses: dtolnay/rust-toolchain@stable
         with:
-          targets: x86_64-pc-windows-msvc
+          targets: ${{ matrix.target }}
 
       - name: Setup Rust cache
         uses: Swatinem/rust-cache@v2
+        with:
+          key: ${{ matrix.target }}
 
       - name: Build Release Binary
-        run: cargo build --release --bin retranslate --target x86_64-pc-windows-msvc
+        run: cargo build --release --bin retranslate --target ${{ matrix.target }}
 
       - name: Create Portable ZIP
         shell: pwsh
         run: |
+          $ErrorActionPreference = "Stop"
           $tag = "${{ needs.prepare-release.outputs.release_tag }}"
-          $zipName = "reTranslate-${tag}-windows-x64.zip"
-          New-Item -ItemType Directory -Force -Path "dist/portable"
-          Copy-Item "target/x86_64-pc-windows-msvc/release/retranslate.exe" "dist/portable/retranslate.exe"
-          Copy-Item "README.md" "dist/portable/README.md" -ErrorAction SilentlyContinue
-          Copy-Item "LICENSE" "dist/portable/LICENSE" -ErrorAction SilentlyContinue
-          Compress-Archive -Path "dist/portable/*" -DestinationPath "dist/$zipName"
+          $zipName = "reTranslate-${tag}-${{ matrix.artifact }}.zip"
+          $stagingDir = "dist/portable_${{ matrix.artifact }}"
+          New-Item -ItemType Directory -Force -Path $stagingDir | Out-Null
+          Copy-Item "target/${{ matrix.target }}/release/retranslate.exe" "$stagingDir/retranslate.exe"
+          Copy-Item "README.md" "$stagingDir/README.md" -ErrorAction SilentlyContinue
+          Copy-Item "LICENSE" "$stagingDir/LICENSE" -ErrorAction SilentlyContinue
+          Compress-Archive -Path "$stagingDir/*" -DestinationPath "dist/$zipName" -Force
           Write-Output "Created portable ZIP: dist/$zipName"
 
       - name: Build MSI with WiX Toolset
         shell: pwsh
         run: |
+          $ErrorActionPreference = "Stop"
           $tag = "${{ needs.prepare-release.outputs.release_tag }}"
-          $msiName = "reTranslate-${tag}-windows-x64.msi"
-          # WiX is preinstalled on windows-latest runner in PATH
-          & candle.exe -arch x64 -ext WixUIExtension -out "target/main.wixobj" "wix/main.wxs"
-          & light.exe -ext WixUIExtension -out "dist/$msiName" "target/main.wixobj"
-          Write-Output "Created MSI installer: dist/$msiName"
+          $version = "${{ needs.prepare-release.outputs.raw_version }}"
+          $msiName = "reTranslate-${tag}-${{ matrix.artifact }}.msi"
+          $exePath = "target\${{ matrix.target }}\release\retranslate.exe"
+          
+          if (-not (Test-Path $exePath)) {
+              throw "Expected release executable not found at: $exePath"
+          }
+
+          New-Item -ItemType Directory -Force -Path "target\wix" | Out-Null
+          Write-Output "Compiling MSI for ${{ matrix.arch }} using binary $exePath"
+
+          & candle.exe -arch ${{ matrix.arch }} -dVersion="$version" -dWin64="${{ matrix.win64 }}" -dSourceExePath="$exePath" -ext WixUIExtension -out "target\wix\main_${{ matrix.arch }}.wixobj" "wix\main.wxs"
+          if ($LASTEXITCODE -ne 0) { throw "candle.exe failed with exit code $LASTEXITCODE" }
+
+          & light.exe -ext WixUIExtension -out "dist\$msiName" "target\wix\main_${{ matrix.arch }}.wixobj"
+          if ($LASTEXITCODE -ne 0) { throw "light.exe failed with exit code $LASTEXITCODE" }
+
+          Write-Output "Successfully created MSI installer: dist/$msiName"
 
       - name: Upload Windows Artifacts
         uses: actions/upload-artifact@v4
         with:
-          name: windows-packages
+          name: ${{ matrix.artifact }}-packages
           path: dist/*
 
   build-macos:
-    name: Build & Package macOS (Apple Silicon)
+    name: Build & Package macOS (Apple Silicon + Macintel Universal)
     needs: [prepare-release]
     runs-on: macos-latest
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
 
-      - name: Install Rust toolchain
+      - name: Install Rust toolchains
         uses: dtolnay/rust-toolchain@stable
         with:
-          targets: aarch64-apple-darwin
+          targets: aarch64-apple-darwin,x86_64-apple-darwin
 
       - name: Setup Rust cache
         uses: Swatinem/rust-cache@v2
 
-      - name: Build Release Binary
+      - name: Build Apple Silicon Binary
         run: cargo build --release --bin retranslate --target aarch64-apple-darwin
 
-      - name: Package macOS tarball
+      - name: Build Mac Intel Binary
+        run: cargo build --release --bin retranslate --target x86_64-apple-darwin
+
+      - name: Create Tarballs and Universal Binary
         run: |
+          set -euo pipefail
           TAG="${{ needs.prepare-release.outputs.release_tag }}"
-          mkdir -p dist
+          mkdir -p dist/bin-universal
+
+          # 1. Package individual architecture tarballs
           tar -czvf "dist/reTranslate-${TAG}-macos-arm64.tar.gz" -C target/aarch64-apple-darwin/release retranslate
+          tar -czvf "dist/reTranslate-${TAG}-macos-x64.tar.gz" -C target/x86_64-apple-darwin/release retranslate
+
+          # 2. Combine into macOS Universal Binary using lipo
+          lipo -create -output dist/bin-universal/retranslate \
+            target/aarch64-apple-darwin/release/retranslate \
+            target/x86_64-apple-darwin/release/retranslate
+          lipo -info dist/bin-universal/retranslate
+
+          # 3. Package Universal Binary tarball
+          tar -czvf "dist/reTranslate-${TAG}-macos-universal.tar.gz" -C dist/bin-universal retranslate
 
       - name: Upload macOS Artifacts
         uses: actions/upload-artifact@v4
@@ -113,48 +161,70 @@ jobs:
           path: dist/*
 
   build-linux:
-    name: Build & Package Linux (x86_64)
+    name: Build & Package Linux (${{ matrix.artifact }})
     needs: [prepare-release]
     runs-on: ubuntu-22.04
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - target: x86_64-unknown-linux-gnu
+            arch: x86_64
+            artifact: linux-x64
+          - target: aarch64-unknown-linux-gnu
+            arch: aarch64
+            artifact: linux-arm64
+          - target: i686-unknown-linux-gnu
+            arch: i686
+            artifact: linux-i686
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
 
+      - name: Setup Cross Compilation Environment
+        run: |
+          set -euo pipefail
+          if [ "${{ matrix.arch }}" = "aarch64" ]; then
+            sudo apt-get update
+            sudo apt-get install -y gcc-aarch64-linux-gnu g++-aarch64-linux-gnu pkg-config
+            echo "CARGO_TARGET_AARCH64_UNKNOWN_LINUX_GNU_LINKER=aarch64-linux-gnu-gcc" >> $GITHUB_ENV
+          elif [ "${{ matrix.arch }}" = "i686" ]; then
+            sudo dpkg --add-architecture i386
+            sudo apt-get update
+            sudo apt-get install -y gcc-multilib g++-multilib pkg-config \
+              libasound2-dev:i386 libx11-dev:i386 libxcursor-dev:i386 libxi-dev:i386 \
+              libxinerama-dev:i386 libxrandr-dev:i386 libxkbcommon-dev:i386 libwayland-dev:i386
+          else
+            sudo apt-get update
+            sudo apt-get install -y --no-install-recommends \
+              libasound2-dev libx11-dev libxcursor-dev libxi-dev libxinerama-dev \
+              libxrandr-dev libxkbcommon-dev libwayland-dev pkg-config
+          fi
+
       - name: Install Rust toolchain
         uses: dtolnay/rust-toolchain@stable
         with:
-          targets: x86_64-unknown-linux-gnu
+          targets: ${{ matrix.target }}
 
       - name: Setup Rust cache
         uses: Swatinem/rust-cache@v2
-
-      - name: Install Linux system dependencies
-        run: |
-          sudo apt-get update
-          sudo apt-get install -y --no-install-recommends \
-            libasound2-dev \
-            libx11-dev \
-            libxcursor-dev \
-            libxi-dev \
-            libxinerama-dev \
-            libxrandr-dev \
-            libxkbcommon-dev \
-            libwayland-dev \
-            pkg-config
+        with:
+          key: ${{ matrix.target }}
 
       - name: Build Release Binary
-        run: cargo build --release --bin retranslate --target x86_64-unknown-linux-gnu
+        run: cargo build --release --bin retranslate --target ${{ matrix.target }}
 
       - name: Package Linux tarball
         run: |
+          set -euo pipefail
           TAG="${{ needs.prepare-release.outputs.release_tag }}"
           mkdir -p dist
-          tar -czvf "dist/reTranslate-${TAG}-linux-x64.tar.gz" -C target/x86_64-unknown-linux-gnu/release retranslate
+          tar -czvf "dist/reTranslate-${TAG}-${{ matrix.artifact }}.tar.gz" -C target/${{ matrix.target }}/release retranslate
 
       - name: Upload Linux Artifacts
         uses: actions/upload-artifact@v4
         with:
-          name: linux-packages
+          name: ${{ matrix.artifact }}-packages
           path: dist/*
 
   publish-release:

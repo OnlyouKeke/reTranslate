@@ -77,22 +77,20 @@ cargo run --bin retranslate
 
 ---
 
-## 📦 打包与发布 (Packaging & Releases)
+## 📦 打包与支持平台矩阵 (Packaging & Platform Matrix)
 
-项目预置了全自动 GitHub Actions CI/CD 多平台构建流水线：
+项目预置了全自动 GitHub Actions CI/CD 多平台构建流水线（合并/推送至 `release` 分支或推送 `v*` 标签即自动触发）：
 
-### Windows 打包 (MSI 安装包与免安装便携版)
-- 借助 WiX Toolset 构建原生 Windows 安装包：
-  ```powershell
-  cargo build --release --bin retranslate
-  candle.exe -arch x64 -ext WixUIExtension -out target/main.wixobj wix/main.wxs
-  light.exe -ext WixUIExtension -out dist/reTranslate-windows-x64.msi target/main.wixobj
-  ```
-- 包含开始菜单快捷方式、桌面快捷方式与干净卸载逻辑。
-
-### macOS / Linux 打包
-- macOS: 原生二进制便携 `.tar.gz` 及 `.dmg` 安装映像。
-- Linux: 便携式 `.tar.gz` 发布包。
+| 操作系统 (OS) | 架构 (Arch) | 分发格式 (Packages) | 说明 (Description) |
+| :--- | :--- | :--- | :--- |
+| **Windows** | `x86_64` (64-bit) | `.msi` 安装包 / `.zip` 便携版 | 包含开始菜单与桌面快捷方式、干净卸载 |
+| **Windows** | `ARM64` (`aarch64`) | `.msi` 安装包 / `.zip` 便携版 | 原生适配 Snapdragon X Elite / Surface Pro 等 ARM64 设备 |
+| **macOS** | `Apple Silicon` (`aarch64`) | `.tar.gz` | 针对 M1/M2/M3/M4 芯片原生优化 |
+| **macOS** | `Intel` (`x86_64`) | `.tar.gz` | 支持传统 Intel 处理器 Mac 机型 |
+| **macOS** | `Universal` (全架构通用) | `.tar.gz` | 内置 `lipo` 通用二进制，在任意 Mac 机型即开即用 |
+| **Linux** | `x86_64` (64-bit) | `.tar.gz` | 现代 Linux 桌面标准版 |
+| **Linux** | `ARM64` (`aarch64`) | `.tar.gz` | 适配 Raspberry Pi 4/5、ARM 服务器及国产 ARM 架构桌面 |
+| **Linux** | `i686` (32-bit x86) | `.tar.gz` | 兼容旧款 32 位 x86 Linux 设备 |
 
 ---
 

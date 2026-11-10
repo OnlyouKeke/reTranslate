@@ -3,7 +3,7 @@
     <Product Id="*"
              Name="reTranslate"
              Language="1033"
-             Version="0.1.0"
+             Version="$(var.Version)"
              Manufacturer="reTranslate Project"
              UpgradeCode="e3814674-8b17-4ef8-a477-98c8c505cb79">
         
@@ -20,9 +20,9 @@
         <Directory Id="TARGETDIR" Name="SourceDir">
             <Directory Id="ProgramFiles64Folder">
                 <Directory Id="INSTALLDIR" Name="reTranslate">
-                    <Component Id="MainExecutable" Guid="a63e8095-2fc4-47b2-9a67-5f1295b9a891" Win64="yes">
+                    <Component Id="MainExecutable" Guid="a63e8095-2fc4-47b2-9a67-5f1295b9a891" Win64="$(var.Win64)">
                         <File Id="reTranslateEXE"
-                              Source="target\release\retranslate.exe"
+                              Source="$(var.SourceExePath)"
                               KeyPath="yes"
                               Checksum="yes" />
                     </Component>
