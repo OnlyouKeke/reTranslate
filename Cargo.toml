@@ -21,7 +21,7 @@ gpui_platform = { version = "=0.3.12", package = "gpui-pre-platform" }
 # Async Network & Background Runtime
 tokio = { version = "1.54", features = ["full"] }
 futures = "0.3"
-reqwest = { version = "0.12", features = ["json", "stream"] }
+reqwest = { version = "0.12", default-features = false, features = ["json", "stream", "rustls-tls"] }
 
 # SQLite Persistence & Connection Pool
 rusqlite = { version = "0.32.1", features = ["bundled"] }

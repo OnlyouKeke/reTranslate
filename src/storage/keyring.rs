@@ -56,6 +56,15 @@ impl CredentialStore {
         }
     }
 
+    /// Create credential store with custom service name and fallback file (for isolated tests)
+    pub fn with_service_and_fallback(service: impl Into<String>, fallback_file: PathBuf) -> Self {
+        Self {
+            service: service.into(),
+            fallback_file,
+            lock: Arc::new(Mutex::new(())),
+        }
+    }
+
     /// Retrieve API key for a provider
     pub fn get_key(&self, provider: &str) -> Result<Option<String>, KeyringError> {
         let key_name = format!("api_key:{}", provider);
@@ -226,7 +235,9 @@ mod tests {
         let _ = fs::remove_dir_all(&temp_dir);
         let fallback_file = temp_dir.join("credentials.json");
 
-        let store = CredentialStore::with_fallback_file(fallback_file.clone());
+        let service = format!("retrans_test_fallback_{}", std::process::id());
+        let store = CredentialStore::with_service_and_fallback(service, fallback_file.clone());
+        let _ = store.delete_key("openai");
 
         // 1. Initially missing
         assert_eq!(store.get_key("openai").unwrap(), None);
@@ -266,7 +277,9 @@ mod tests {
         // Write raw binary invalid UTF-8 bytes
         fs::write(&fallback_file, [0xFF, 0xFE, 0xFD, 0x80, 0x00, 0x01]).unwrap();
 
-        let store = CredentialStore::with_fallback_file(fallback_file.clone());
+        let service = format!("retrans_test_nonutf8_{}", std::process::id());
+        let store = CredentialStore::with_service_and_fallback(service, fallback_file.clone());
+        let _ = store.delete_key("openai");
 
         // 1. get_key should recover gracefully and return Ok(None)
         assert_eq!(store.get_key("openai").unwrap(), None);
@@ -280,6 +293,7 @@ mod tests {
         let val: serde_json::Value = serde_json::from_str(&content).unwrap();
         assert_eq!(val["api_key:openai"], "sk-recovered-key");
 
+        let _ = store.delete_key("openai");
         let _ = fs::remove_dir_all(&temp_dir);
     }
 
@@ -290,7 +304,8 @@ mod tests {
         let _ = fs::create_dir_all(&temp_dir);
         let fallback_file = temp_dir.join("credentials.json");
 
-        let store = CredentialStore::with_fallback_file(fallback_file.clone());
+        let service = format!("retrans_test_concurrent_{}", std::process::id());
+        let store = CredentialStore::with_service_and_fallback(service, fallback_file.clone());
         let mut handles = Vec::new();
 
         for i in 0..20 {
@@ -331,7 +346,8 @@ mod tests {
         let _ = fs::create_dir_all(&temp_dir);
         let fallback_file = temp_dir.join("credentials.json");
 
-        let store = CredentialStore::with_fallback_file(fallback_file.clone());
+        let service = format!("retrans_test_atomic_{}", std::process::id());
+        let store = CredentialStore::with_service_and_fallback(service, fallback_file.clone());
         store.set_key("key1", "val1").unwrap();
         store.set_key("key2", "val2").unwrap();
 
@@ -353,6 +369,7 @@ mod tests {
             assert_eq!(mode, 0o600);
         }
 
+        let _ = store.delete_key("key2");
         let _ = fs::remove_dir_all(&temp_dir);
     }
 }
