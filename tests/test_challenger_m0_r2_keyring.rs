@@ -394,6 +394,7 @@ fn test_self_healing_malformed_json_and_wrong_schema() {
         fs::write(&fallback_file, malformed).expect("write malformed scenario");
 
         let store = CredentialStore::with_fallback_file(fallback_file.clone());
+        let _ = store.delete_key("target");
         assert_eq!(
             store.get_key("target").unwrap(),
             None,
@@ -419,6 +420,7 @@ fn test_self_healing_malformed_json_and_wrong_schema() {
             map.get("api_key:target"),
             Some(&format!("sk-valid-{}", idx))
         );
+        let _ = store.delete_key("target");
     }
 
     let _ = fs::remove_dir_all(&temp_dir);

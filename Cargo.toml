@@ -59,9 +59,13 @@ percent-encoding = "2.3"
 quick-xml = "0.41"
 lopdf = "0.47"
 
-# Linux libc Pinning Constraint (xattr 0.2.3 ENOATTR compatibility)
 libc = "=0.2.186"
 rfd = "0.15"
+
+[target.'cfg(target_os = "linux")'.dependencies]
+wayland-sys = { version = "0.31", default-features = false, features = ["dlopen"] }
+wayland-backend = { version = "0.3", default-features = false, features = ["dlopen"] }
+wayland-client = { version = "0.31", default-features = false, features = ["dlopen"] }
 
 [dev-dependencies]
 gpui-pre = { version = "=0.3.12", features = ["test-support"] }

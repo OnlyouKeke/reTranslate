@@ -49,11 +49,13 @@ impl CredentialStore {
 
     /// Create credential store with custom fallback file (for tests or custom configuration)
     pub fn with_fallback_file(fallback_file: PathBuf) -> Self {
-        Self {
-            service: APP_SERVICE_NAME.to_string(),
-            fallback_file,
-            lock: Arc::new(Mutex::new(())),
-        }
+        let dir_name = fallback_file
+            .parent()
+            .and_then(|p| p.file_name())
+            .map(|n| n.to_string_lossy().to_string())
+            .unwrap_or_else(|| "test".to_string());
+        let service = format!("retrans_{}_{}", dir_name, std::process::id());
+        Self::with_service_and_fallback(service, fallback_file)
     }
 
     /// Create credential store with custom service name and fallback file (for isolated tests)

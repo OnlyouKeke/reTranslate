@@ -6029,6 +6029,9 @@ dependencies = [
  "tracing",
  "tracing-appender",
  "tracing-subscriber",
+ "wayland-backend",
+ "wayland-client",
+ "wayland-sys",
  "zip 2.6.1",
 ]
 
