@@ -49,24 +49,40 @@ impl Default for LayoutSettings {
     }
 }
 
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize, Default)]
+pub enum SettingsTab {
+    #[default]
+    Metadata,    // 说明 (Metadata)
+    Security,    // 安全性 (Security)
+    Fonts,       // 字体 (Fonts)
+    InitialView, // 初始视图 (Initial View)
+    Engine,      // 渲染与引擎 (Render Engine & Translation)
+    Advanced,    // 高级 (Advanced Specs)
+}
+
 pub mod colors {
-    // Catppuccin Mocha inspired dark theme colors
-    pub const DARK_BG_BASE: u32 = 0x1e1e2e;
-    pub const DARK_BG_SURFACE: u32 = 0x313244;
-    pub const DARK_TEXT_MAIN: u32 = 0xcdd6f4;
-    pub const DARK_TEXT_MUTED: u32 = 0xa6adc8;
-    pub const DARK_ACCENT_BLUE: u32 = 0x89b4fa;
-    pub const DARK_ERROR_RED: u32 = 0xf38ba8;
-    pub const DARK_BORDER: u32 = 0x45475a;
+    // Zed Modern Industrial Theme (from stitch_style_pdf_reader design draft)
+    pub const DARK_BG_BASE: u32 = 0x0f0f12;
+    pub const DARK_BG_SURFACE: u32 = 0x18181b;
+    pub const DARK_BG_MODAL: u32 = 0x1e1e24;
+    pub const DARK_BG_HEADER: u32 = 0x252630;
+    pub const DARK_BORDER: u32 = 0x313543;
+    pub const DARK_TEXT_MAIN: u32 = 0xdcdfe4;
+    pub const DARK_TEXT_MUTED: u32 = 0x8b92a0;
+    pub const DARK_ACCENT_BLUE: u32 = 0x528bff;
+    pub const DARK_ACCENT_HOVER: u32 = 0x61afef;
+    pub const DARK_SUCCESS_GREEN: u32 = 0x98c379;
+    pub const DARK_WARNING_YELLOW: u32 = 0xe5c07b;
+    pub const DARK_ERROR_RED: u32 = 0xe06c75;
 
     // Light theme colors
-    pub const LIGHT_BG_BASE: u32 = 0xfafafa;
+    pub const LIGHT_BG_BASE: u32 = 0xf8fafc;
     pub const LIGHT_BG_SURFACE: u32 = 0xffffff;
-    pub const LIGHT_TEXT_MAIN: u32 = 0x18181b;
-    pub const LIGHT_TEXT_MUTED: u32 = 0x71717a;
+    pub const LIGHT_TEXT_MAIN: u32 = 0x0f172a;
+    pub const LIGHT_TEXT_MUTED: u32 = 0x475569;
     pub const LIGHT_ACCENT_BLUE: u32 = 0x2563eb;
     pub const LIGHT_ERROR_RED: u32 = 0xdc2626;
-    pub const LIGHT_BORDER: u32 = 0xe4e4e7;
+    pub const LIGHT_BORDER: u32 = 0xcbd5e1;
 }
 
 #[cfg(test)]

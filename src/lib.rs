@@ -22,4 +22,4 @@ pub use translation::{
 };
 pub use ui::i18n::{current_locale, set_locale, t, t_locale, Locale};
 pub use ui::main_window::MainWindow;
-pub use ui::theme::{LayoutSettings, ReadingMode, ReadingWidth};
+pub use ui::theme::{LayoutSettings, ReadingMode, ReadingWidth, SettingsTab};

@@ -61,6 +61,7 @@ lopdf = "0.47"
 
 # Linux libc Pinning Constraint (xattr 0.2.3 ENOATTR compatibility)
 libc = "=0.2.186"
+rfd = "0.15"
 
 [dev-dependencies]
 gpui-pre = { version = "=0.3.12", features = ["test-support"] }
