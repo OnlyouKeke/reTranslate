@@ -367,6 +367,7 @@ fn challenge_keyring_fallback_truncated_json_corruption_and_recovery() {
     fs::write(&file, b"{\"api_key:deepseek\": \"sk-corrupted-partial").unwrap();
 
     let store = CredentialStore::with_fallback_file(file.clone());
+    let _ = store.delete_key("deepseek");
 
     // Should return None gracefully without panicking
     let read_result = store.get_key("deepseek");
@@ -383,6 +384,7 @@ fn challenge_keyring_fallback_truncated_json_corruption_and_recovery() {
     let content = fs::read_to_string(&file).unwrap();
     let map: serde_json::Value = serde_json::from_str(&content).expect("Disk file must be valid JSON after recovery");
     assert_eq!(map["api_key:deepseek"], "sk-recovered-key-1234");
+    let _ = store.delete_key("deepseek");
 
     let _ = fs::remove_dir_all(&temp_dir);
 }
@@ -397,15 +399,19 @@ fn challenge_keyring_fallback_wrong_schema_and_empty_file_recovery() {
     // Case A: 0-byte empty file
     fs::write(&file, b"").unwrap();
     let store = CredentialStore::with_fallback_file(file.clone());
+    let _ = store.delete_key("openai");
     assert_eq!(store.get_key("openai").unwrap(), None);
     store.set_key("openai", "sk-key-from-empty").unwrap();
     assert_eq!(store.get_key("openai").unwrap(), Some("sk-key-from-empty".into()));
+    let _ = store.delete_key("openai");
 
     // Case B: Valid JSON, but wrong type (array instead of map)
     fs::write(&file, b"[1, 2, 3, 4]").unwrap();
-    assert_eq!(store.get_key("openai").unwrap(), None);
-    store.set_key("openai", "sk-key-from-array").unwrap();
-    assert_eq!(store.get_key("openai").unwrap(), Some("sk-key-from-array".into()));
+    let _ = store.delete_key("deepseek");
+    assert_eq!(store.get_key("deepseek").unwrap(), None);
+    store.set_key("deepseek", "sk-key-from-array").unwrap();
+    assert_eq!(store.get_key("deepseek").unwrap(), Some("sk-key-from-array".into()));
+    let _ = store.delete_key("deepseek");
 
     let _ = fs::remove_dir_all(&temp_dir);
 }
@@ -418,6 +424,8 @@ fn challenge_keyring_fallback_permission_tampering_and_restoration() {
     let file = temp_dir.join("credentials.json");
 
     let store = CredentialStore::with_fallback_file(file.clone());
+    let _ = store.delete_key("provider1");
+    let _ = store.delete_key("provider2");
     store.set_key("provider1", "key1").unwrap();
 
     #[cfg(unix)]
@@ -436,6 +444,8 @@ fn challenge_keyring_fallback_permission_tampering_and_restoration() {
         assert_eq!(mode, 0o600, "Permissions must be strictly restored to 0600 after update");
     }
 
+    let _ = store.delete_key("provider1");
+    let _ = store.delete_key("provider2");
     let _ = fs::remove_dir_all(&temp_dir);
 }
 
@@ -454,6 +464,7 @@ fn challenge_keyring_fallback_non_utf8_binary_corruption_finding() {
     fs::write(&file, [0xFF, 0xFE, 0xFD, 0x80, 0x00, 0x01]).unwrap();
 
     let store = CredentialStore::with_fallback_file(file.clone());
+    let _ = store.delete_key("openai");
 
     // 1. Verify get_key recovers gracefully from non-UTF8 corruption and returns Ok(None)
     let get_res = store.get_key("openai");
@@ -464,6 +475,7 @@ fn challenge_keyring_fallback_non_utf8_binary_corruption_finding() {
     let set_res = store.set_key("openai", "sk-new-key");
     assert!(set_res.is_ok(), "set_key must self-heal when file has non-UTF8 bytes");
     assert_eq!(store.get_key("openai").unwrap(), Some("sk-new-key".to_string()));
+    let _ = store.delete_key("openai");
 
     let _ = fs::remove_dir_all(&temp_dir);
 }
