@@ -1,0 +1,32 @@
+# Rust build artifacts
+target/
+**/*.rs.bk
+*.pdb
+
+# Operating System files
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# Environment and sensitive keys
+.env
+.env.*
+!.env.example
+
+# IDE configurations
+.idea/
+.vscode/
+*.swp
+*.swo
+
+# Local database & logs
+*.db
+*.db-shm
+*.db-wal
+logs/
+retranslate.db*
+
+# Scratch & test dumps
+scratch/
+test_output/
+.agents/

@@ -1,0 +1,81 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<Wix xmlns="http://schemas.microsoft.com/wix/2006/wi">
+    <Product Id="*"
+             Name="reTranslate"
+             Language="1033"
+             Version="0.1.0"
+             Manufacturer="reTranslate Project"
+             UpgradeCode="e3814674-8b17-4ef8-a477-98c8c505cb79">
+        
+        <Package InstallerVersion="450"
+                 Compressed="yes"
+                 InstallScope="perMachine"
+                 Description="reTranslate Desktop AI Reader &amp; Translator"
+                 Comments="Cross-platform document reader with OpenAI-compatible AI translation." />
+
+        <MajorUpgrade DowngradeErrorMessage="A newer version of [ProductName] is already installed." />
+        <MediaTemplate EmbedCab="yes" />
+
+        <!-- Directory Hierarchy -->
+        <Directory Id="TARGETDIR" Name="SourceDir">
+            <Directory Id="ProgramFiles64Folder">
+                <Directory Id="INSTALLDIR" Name="reTranslate">
+                    <Component Id="MainExecutable" Guid="a63e8095-2fc4-47b2-9a67-5f1295b9a891" Win64="yes">
+                        <File Id="reTranslateEXE"
+                              Source="target\release\retranslate.exe"
+                              KeyPath="yes"
+                              Checksum="yes" />
+                    </Component>
+                </Directory>
+            </Directory>
+
+            <!-- Start Menu Programs Folder -->
+            <Directory Id="ProgramMenuFolder">
+                <Directory Id="ApplicationProgramsFolder" Name="reTranslate">
+                    <Component Id="ApplicationShortcut" Guid="7d805c8a-7c98-4d32-bf72-6831d871789c">
+                        <Shortcut Id="ApplicationStartMenuShortcut"
+                                  Name="reTranslate"
+                                  Description="reTranslate AI Document Reader"
+                                  Target="[#reTranslateEXE]"
+                                  WorkingDirectory="INSTALLDIR" />
+                        <RemoveFolder Id="CleanUpShortCut" Directory="ApplicationProgramsFolder" On="uninstall" />
+                        <RegistryValue Root="HKCU"
+                                       Key="Software\reTranslate"
+                                       Name="installed"
+                                       Type="integer"
+                                       Value="1"
+                                       KeyPath="yes" />
+                    </Component>
+                </Directory>
+            </Directory>
+
+            <!-- Desktop Shortcut -->
+            <Directory Id="DesktopFolder" Name="Desktop">
+                <Component Id="DesktopShortcutComponent" Guid="3cb4f678-4bf8-4672-91f1-ec3fcf7d7b05">
+                    <Shortcut Id="ApplicationDesktopShortcut"
+                              Name="reTranslate"
+                              Description="reTranslate AI Document Reader"
+                              Target="[#reTranslateEXE]"
+                              WorkingDirectory="INSTALLDIR" />
+                    <RegistryValue Root="HKCU"
+                                   Key="Software\reTranslate"
+                                   Name="desktop_shortcut"
+                                   Type="integer"
+                                   Value="1"
+                                   KeyPath="yes" />
+                </Component>
+            </Directory>
+        </Directory>
+
+        <!-- Feature Sets -->
+        <Feature Id="Complete" Title="reTranslate Reader" Level="1">
+            <ComponentRef Id="MainExecutable" />
+            <ComponentRef Id="ApplicationShortcut" />
+            <ComponentRef Id="DesktopShortcutComponent" />
+        </Feature>
+
+        <!-- Minimal Standard UI -->
+        <UIRef Id="WixUI_Minimal" />
+        <WixVariable Id="WixUILicenseRtf" Value="wix\License.rtf" />
+    </Product>
+</Wix>

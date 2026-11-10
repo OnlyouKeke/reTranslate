@@ -1,0 +1,155 @@
+name: Release Multi-Platform Packages
+
+on:
+  push:
+    tags:
+      - "v*"
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  build-windows:
+    name: Build & Package Windows (MSI + Portable ZIP)
+    runs-on: windows-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Install Rust toolchain
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: x86_64-pc-windows-msvc
+
+      - name: Setup Rust cache
+        uses: Swatinem/rust-cache@v2
+
+      - name: Build Release Binary
+        run: cargo build --release --bin retranslate --target x86_64-pc-windows-msvc
+
+      - name: Create Portable ZIP
+        shell: pwsh
+        run: |
+          $tag = if ($env:GITHUB_REF_NAME) { $env:GITHUB_REF_NAME } else { "latest" }
+          $zipName = "reTranslate-${tag}-windows-x64.zip"
+          New-Item -ItemType Directory -Force -Path "dist/portable"
+          Copy-Item "target/x86_64-pc-windows-msvc/release/retranslate.exe" "dist/portable/retranslate.exe"
+          Copy-Item "README.md" "dist/portable/README.md" -ErrorAction SilentlyContinue
+          Compress-Archive -Path "dist/portable/*" -DestinationPath "dist/$zipName"
+          Write-Output "PORTABLE_ZIP=dist/$zipName" >> $env:GITHUB_ENV
+
+      - name: Build MSI with WiX Toolset
+        shell: pwsh
+        run: |
+          $tag = if ($env:GITHUB_REF_NAME) { $env:GITHUB_REF_NAME } else { "latest" }
+          $msiName = "reTranslate-${tag}-windows-x64.msi"
+          # WiX is preinstalled on windows-latest in PATH (WIX env or standard path)
+          & candle.exe -arch x64 -ext WixUIExtension -out "target/main.wixobj" "wix/main.wxs"
+          & light.exe -ext WixUIExtension -out "dist/$msiName" "target/main.wixobj"
+          Write-Output "MSI_PATH=dist/$msiName" >> $env:GITHUB_ENV
+
+      - name: Upload Windows Artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: windows-packages
+          path: dist/*
+
+  build-macos:
+    name: Build & Package macOS (Apple Silicon & Intel)
+    runs-on: macos-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Install Rust toolchain
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: aarch64-apple-darwin
+
+      - name: Setup Rust cache
+        uses: Swatinem/rust-cache@v2
+
+      - name: Build Release Binary
+        run: cargo build --release --bin retranslate --target aarch64-apple-darwin
+
+      - name: Package macOS tarball
+        run: |
+          TAG="${GITHUB_REF_NAME:-latest}"
+          mkdir -p dist
+          tar -czvf "dist/reTranslate-${TAG}-macos-arm64.tar.gz" -C target/aarch64-apple-darwin/release retranslate
+
+      - name: Upload macOS Artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: macos-packages
+          path: dist/*
+
+  build-linux:
+    name: Build & Package Linux (x86_64)
+    runs-on: ubuntu-22.04
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Install Rust toolchain
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: x86_64-unknown-linux-gnu
+
+      - name: Setup Rust cache
+        uses: Swatinem/rust-cache@v2
+
+      - name: Install Linux system dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends \
+            libasound2-dev \
+            libx11-dev \
+            libxcursor-dev \
+            libxi-dev \
+            libxinerama-dev \
+            libxrandr-dev \
+            libxkbcommon-dev \
+            libwayland-dev \
+            pkg-config
+
+      - name: Build Release Binary
+        run: cargo build --release --bin retranslate --target x86_64-unknown-linux-gnu
+
+      - name: Package Linux tarball
+        run: |
+          TAG="${GITHUB_REF_NAME:-latest}"
+          mkdir -p dist
+          tar -czvf "dist/reTranslate-${TAG}-linux-x64.tar.gz" -C target/x86_64-unknown-linux-gnu/release retranslate
+
+      - name: Upload Linux Artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: linux-packages
+          path: dist/*
+
+  publish-release:
+    name: Publish GitHub Release
+    needs: [build-windows, build-macos, build-linux]
+    runs-on: ubuntu-latest
+    if: startsWith(github.ref, 'refs/tags/v')
+    steps:
+      - name: Download all built packages
+        uses: actions/download-artifact@v4
+        with:
+          path: all-dist
+
+      - name: Flatten release assets
+        run: |
+          mkdir -p release-assets
+          find all-dist -type f \( -name "*.zip" -o -name "*.msi" -o -name "*.tar.gz" \) -exec cp {} release-assets/ \;
+          ls -la release-assets
+
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          files: release-assets/*
+          draft: false
+          prerelease: false
+          generate_release_notes: true

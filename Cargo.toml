@@ -1,0 +1,77 @@
+[package]
+name = "retranslate"
+version = "0.1.0"
+edition = "2021"
+
+[lib]
+name = "retranslate"
+path = "src/lib.rs"
+
+[[bin]]
+name = "retranslate"
+path = "src/main.rs"
+
+[dependencies]
+# GUI Framework & Components
+gpui-pre = "=0.3.12"
+gpui-component = "=0.9.1"
+gpui_base = { version = "=0.9.1", package = "gpui-base" }
+gpui_platform = { version = "=0.3.12", package = "gpui-pre-platform" }
+
+# Async Network & Background Runtime
+tokio = { version = "1.54", features = ["full"] }
+futures = "0.3"
+reqwest = { version = "0.12", features = ["json", "stream"] }
+
+# SQLite Persistence & Connection Pool
+rusqlite = { version = "0.32.1", features = ["bundled"] }
+r2d2 = "0.8.10"
+r2d2_sqlite = "0.25.0"
+
+# Credential Security & System
+keyring = { version = "4.2.0", optional = true }
+dirs = "5.0"
+
+# Serialization & Cryptography
+serde = { version = "1.0", features = ["derive"] }
+serde_json = "1.0"
+sha2 = "0.10"
+
+# Error Handling & Diagnostic Logging
+thiserror = "2.0"
+tracing = "0.1"
+tracing-subscriber = { version = "0.3", features = ["env-filter", "fmt"] }
+tracing-appender = "0.2"
+
+# Internationalization
+rust-i18n = "4.2"
+
+# Document Parsers & Encoding (Milestone M1)
+epub = "2.1"
+scraper = "0.22"
+docx-rs = "0.4"
+pulldown-cmark = "0.13"
+chardetng = "1.0"
+encoding_rs = "0.8"
+regex = "1.10"
+zip = "2.2"
+percent-encoding = "2.3"
+quick-xml = "0.41"
+lopdf = "0.47"
+
+# Linux libc Pinning Constraint (xattr 0.2.3 ENOATTR compatibility)
+libc = "=0.2.186"
+
+[dev-dependencies]
+gpui-pre = { version = "=0.3.12", features = ["test-support"] }
+
+[features]
+default = ["keyring"]
+keyring = ["dep:keyring"]
+
+[profile.dev]
+debug = 1
+
+[profile.test]
+debug = 1
+
