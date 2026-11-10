@@ -534,15 +534,19 @@ impl EpubParser {
             }
         }
 
-        let resolved_str = resolved.to_string_lossy().to_string();
-        if let Some(bytes) = doc.get_resource_by_path(&resolved_str) {
-            let mime = if resolved_str.ends_with(".png") {
+        let resolved_str = resolved.to_string_lossy().replace('\\', "/");
+        let mime_query = resolved_str.to_lowercase();
+        if let Some(bytes) = doc
+            .get_resource_by_path(&resolved_str)
+            .or_else(|| doc.get_resource_by_path(resolved_str.trim_start_matches('/')))
+        {
+            let mime = if mime_query.ends_with(".png") {
                 "image/png".to_string()
-            } else if resolved_str.ends_with(".jpg") || resolved_str.ends_with(".jpeg") {
+            } else if mime_query.ends_with(".jpg") || mime_query.ends_with(".jpeg") {
                 "image/jpeg".to_string()
-            } else if resolved_str.ends_with(".webp") {
+            } else if mime_query.ends_with(".webp") {
                 "image/webp".to_string()
-            } else if resolved_str.ends_with(".gif") {
+            } else if mime_query.ends_with(".gif") {
                 "image/gif".to_string()
             } else {
                 "application/octet-stream".to_string()
