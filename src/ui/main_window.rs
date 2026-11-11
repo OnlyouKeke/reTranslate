@@ -60,10 +60,10 @@ impl MainWindow {
             show_export_modal: false,
             settings_tab: SettingsTab::Metadata,
             hardware_acceleration: true,
-            doc_title: "lec13-VM1.pdf".to_string(),
-            doc_author: "Virtualization Architecture Team".to_string(),
+            doc_title: "Microsoft PowerPoint - lec13-VM1.pptx".to_string(),
+            doc_author: "kubitron".to_string(),
             doc_subject: "CS262A: Virtual Machine Monitors Architecture".to_string(),
-            doc_keywords: "VMM, Disco, SGI NUMA, Emulation, Flash, AI Translation".to_string(),
+            doc_keywords: "VMM, Disco, SGI NUMA, Emulation, Flash".to_string(),
             is_translating: false,
             translation_progress: (0, 0),
             api_base: "https://api.openai.com/v1".to_string(),
@@ -75,7 +75,7 @@ impl MainWindow {
             scroll_offset_y: 0.0,
             selected_text: None,
             popover_translation: None,
-            notification_toast: None,
+            notification_toast: Some(("已重新提交段落翻译...".to_string(), false)),
         }
     }
 
@@ -244,14 +244,14 @@ impl MainWindow {
             index: 1,
             kind: BlockKind::Paragraph,
             spans: vec![InlineSpan {
-                text: "Deep learning models have transformed natural language processing, computer vision, and scientific computing. Each parameterized transformation maps features into increasingly abstract representations.".to_string(),
+                text: "Deep neural networks are composed of multiple non-linear processing layers designed to learn representations of data with multiple levels of abstraction. Each parameterized transformation extracts hierarchical features into increasingly abstract representations.".to_string(),
                 style: InlineStyle::Plain,
             }],
             translatable: true,
             translation: TranslationState::Translated {
-                text: "深度学习模型已经彻底重塑了自然语言处理、计算机视觉与科学计算。每一个参数化变换都将特征映射到层层递进的抽象表征空间中。".to_string(),
+                text: "深度神经网络由多个非线性处理层组成，旨在学习具有多个抽象级别的数据表示。每个参数化转换都会将分层特征提取为日益抽象的表示形式。".to_string(),
                 spans: vec![InlineSpan {
-                    text: "深度学习模型已经彻底重塑了自然语言处理、计算机视觉与科学计算。每一个参数化变换都将特征映射到层层递进的抽象表征空间中。".to_string(),
+                    text: "深度神经网络由多个非线性处理层组成，旨在学习具有多个抽象级别的数据表示。每个参数化转换都会将分层特征提取为日益抽象的表示形式。".to_string(),
                     style: InlineStyle::Plain,
                 }],
                 provider: Some("openai".to_string()),
@@ -267,14 +267,11 @@ impl MainWindow {
             index: 2,
             kind: BlockKind::Paragraph,
             spans: vec![InlineSpan {
-                text: "Optimization is performed via stochastic gradient descent over mini-batches, regularized by weight decay and layer normalization to prevent vanishing gradients.".to_string(),
+                text: "Optimization is performed via stochastic gradient descent over mini-batches, regularized by weight decay and layer normalization to prevent vanishing or exploding gradients.".to_string(),
                 style: InlineStyle::Plain,
             }],
             translatable: true,
-            translation: TranslationState::Failed {
-                error: i18n::translation_failed_text(None).to_string(),
-                retryable: true,
-            },
+            translation: TranslationState::Translating,
             metadata: BlockMetadata::default(),
         };
 
@@ -284,14 +281,14 @@ impl MainWindow {
             index: 3,
             kind: BlockKind::Paragraph,
             spans: vec![InlineSpan {
-                text: "Select any phrase or term with your mouse cursor to test the floating streaming translation popover, or press Space and drag to pan the viewport smoothly.".to_string(),
+                text: "Select any phrase or term with your mouse cursor to test the floating streaming translation popover, or press Space and drag to pan the canvas smoothly.".to_string(),
                 style: InlineStyle::Plain,
             }],
             translatable: true,
             translation: TranslationState::Translated {
-                text: "使用鼠标光标选中文中任意词句即可测试流式划词翻译浮动卡，或按住空格键（Space）拖拽以平滑平移画布。".to_string(),
+                text: "使用鼠标光标选择任何短语或术语以测试浮动流式翻译弹出窗口，或按住空格键并拖动以平滑平移画布。".to_string(),
                 spans: vec![InlineSpan {
-                    text: "使用鼠标光标选中文中任意词句即可测试流式划词翻译浮动卡，或按住空格键（Space）拖拽以平滑平移画布。".to_string(),
+                    text: "使用鼠标光标选择任何短语或术语以测试浮动流式翻译弹出窗口，或按住空格键并拖动以平滑平移画布。".to_string(),
                     style: InlineStyle::Plain,
                 }],
                 provider: Some("openai".to_string()),
@@ -329,7 +326,7 @@ impl MainWindow {
                 },
                 Chapter {
                     id: "c1".to_string(),
-                    title: "2. Attention & Transformers".to_string(),
+                    title: "2. Modern Deep Neural Networks".to_string(),
                     order: 1,
                     blocks: Vec::new(),
                     sub_chapters: Vec::new(),
@@ -337,7 +334,7 @@ impl MainWindow {
                 },
                 Chapter {
                     id: "c2".to_string(),
-                    title: "3. Scaling Laws & Alignment".to_string(),
+                    title: "3. Mathematical Principles & Proofs".to_string(),
                     order: 2,
                     blocks: Vec::new(),
                     sub_chapters: Vec::new(),
@@ -473,7 +470,7 @@ impl MainWindow {
                             .border_1()
                             .border_color(rgb(colors::DARK_BORDER))
                             .text_sm()
-                            .child(if is_zh { "📂 打开文件" } else { "📂 Open File" })
+                            .child(if is_zh { "📁 打开文件" } else { "📁 Open File" })
                             .on_click(cx.listener(|this, _, _, cx| {
                                 this.open_file_dialog(cx);
                             })),
@@ -549,10 +546,10 @@ impl MainWindow {
                             .px_3()
                             .py_1()
                             .rounded_md()
-                            .bg(rgb(colors::DARK_ACCENT_BLUE))
-                            .text_color(rgb(0x0f0f12))
+                            .bg(rgb(0x2563eb))
+                            .text_color(rgb(0xffffff))
                             .font_weight(gpui::FontWeight::MEDIUM)
-                            .hover(|s| s.bg(rgb(colors::DARK_ACCENT_HOVER)))
+                            .hover(|s| s.bg(rgb(0x1d4ed8)))
                             .text_sm()
                             .child(if is_zh { "✨ 翻译当前章" } else { "✨ Translate Chapter" })
                             .on_click(cx.listener(|this, _, _, cx| {
@@ -580,7 +577,7 @@ impl MainWindow {
                             .border_1()
                             .border_color(rgb(colors::DARK_BORDER))
                             .text_sm()
-                            .child(if is_zh { "📤 导出" } else { "📤 Export" })
+                            .child(if is_zh { "📥 导出" } else { "📥 Export" })
                             .on_click(cx.listener(|this, _, _, cx| {
                                 this.show_export_modal = true;
                                 cx.notify();
@@ -616,7 +613,7 @@ impl MainWindow {
                             .border_1()
                             .border_color(rgb(colors::DARK_BORDER))
                             .text_sm()
-                            .child(if is_zh { "⚙️ 偏好设置" } else { "⚙️ Settings" })
+                            .child(if is_zh { "⚙ 偏好设置" } else { "⚙ Settings" })
                             .on_click(cx.listener(|this, _, _, cx| {
                                 this.settings_tab = SettingsTab::Engine;
                                 this.show_settings_modal = true;
@@ -635,8 +632,8 @@ impl MainWindow {
             .py_0p5()
             .rounded_md()
             .text_xs()
-            .bg(if is_active { rgb(colors::DARK_ACCENT_BLUE) } else { rgb(colors::DARK_BG_BASE) })
-            .text_color(if is_active { rgb(0x11111b) } else { rgb(colors::DARK_TEXT_MUTED) })
+            .bg(if is_active { rgb(0x2563eb) } else { rgb(colors::DARK_BG_BASE) })
+            .text_color(if is_active { rgb(0xffffff) } else { rgb(colors::DARK_TEXT_MUTED) })
             .hover(|s| s.text_color(rgb(colors::DARK_TEXT_MAIN)))
             .child(label)
             .on_click(cx.listener(move |this, _, _, cx| {
@@ -654,7 +651,7 @@ impl MainWindow {
             .py_0p5()
             .rounded_md()
             .text_xs()
-            .bg(if is_active { rgb(0x45475a) } else { rgb(colors::DARK_BG_BASE) })
+            .bg(if is_active { rgb(0x252630) } else { rgb(colors::DARK_BG_BASE) })
             .text_color(if is_active { rgb(colors::DARK_TEXT_MAIN) } else { rgb(colors::DARK_TEXT_MUTED) })
             .hover(|s| s.text_color(rgb(colors::DARK_TEXT_MAIN)))
             .child(label)
@@ -687,7 +684,7 @@ impl MainWindow {
                         div()
                             .text_sm()
                             .font_weight(gpui::FontWeight::BOLD)
-                            .child(if is_zh { "📖 目录 / TOC" } else { "📖 Contents" }),
+                            .child(if is_zh { "■ 目录 / TOC" } else { "■ Contents" }),
                     )
                     .child(
                         div()
@@ -764,6 +761,32 @@ impl MainWindow {
             )
     }
 
+    /// Renders heading or paragraph text with appropriate typographic scale and weight
+    fn render_block_orig(&self, block: &Block) -> impl IntoElement {
+        let orig = block.plain_text();
+        match block.kind {
+            BlockKind::Heading(1) => div()
+                .text_2xl()
+                .font_weight(gpui::FontWeight::BOLD)
+                .text_color(rgb(0xffffff))
+                .child(orig),
+            BlockKind::Heading(2) => div()
+                .text_xl()
+                .font_weight(gpui::FontWeight::BOLD)
+                .text_color(rgb(0xffffff))
+                .child(orig),
+            BlockKind::Heading(_) => div()
+                .text_lg()
+                .font_weight(gpui::FontWeight::BOLD)
+                .text_color(rgb(0xffffff))
+                .child(orig),
+            _ => div()
+                .text_base()
+                .text_color(rgb(colors::DARK_TEXT_MAIN))
+                .child(orig),
+        }
+    }
+
     /// Renders paragraph blocks depending on active ReadingMode
     fn render_current_blocks(&self, cx: &mut Context<Self>) -> Vec<impl IntoElement> {
         let mut elements = Vec::new();
@@ -771,7 +794,6 @@ impl MainWindow {
         if let Some(doc) = &self.active_document {
             if let Some(chapter) = doc.chapters.get(self.current_chapter_idx) {
                 for (block_idx, block) in chapter.blocks.iter().enumerate() {
-                    let orig = block.plain_text();
                     let chapter_idx = self.current_chapter_idx;
 
                     let block_el = match self.reading_mode {
@@ -780,7 +802,7 @@ impl MainWindow {
                                 .flex()
                                 .flex_col()
                                 .gap_1()
-                                .child(div().text_base().text_color(rgb(colors::DARK_TEXT_MAIN)).child(orig))
+                                .child(self.render_block_orig(block))
                                 .child(self.render_translation_part(block, chapter_idx, block_idx, false, cx))
                         }
                         ReadingMode::InlineDotted => {
@@ -788,7 +810,7 @@ impl MainWindow {
                                 .flex()
                                 .flex_col()
                                 .gap_2()
-                                .child(div().text_base().text_color(rgb(colors::DARK_TEXT_MAIN)).child(orig))
+                                .child(self.render_block_orig(block))
                                 .child(self.render_translation_part(block, chapter_idx, block_idx, true, cx))
                         }
                         ReadingMode::SideBySide => {
@@ -798,9 +820,7 @@ impl MainWindow {
                                 .child(
                                     div()
                                         .flex_1()
-                                        .text_base()
-                                        .text_color(rgb(colors::DARK_TEXT_MAIN))
-                                        .child(orig),
+                                        .child(self.render_block_orig(block)),
                                 )
                                 .child(
                                     div()
@@ -818,7 +838,7 @@ impl MainWindow {
                             div()
                                 .flex()
                                 .flex_col()
-                                .child(div().text_base().text_color(rgb(colors::DARK_TEXT_MAIN)).child(orig))
+                                .child(self.render_block_orig(block))
                         }
                     };
 
@@ -843,11 +863,13 @@ impl MainWindow {
 
         match &block.translation {
             TranslationState::Translated { text, .. } => {
+                let is_heading = matches!(block.kind, BlockKind::Heading(_));
                 div()
                     .when(has_dotted_divider, |s| {
                         s.border_t_1().border_color(rgb(0x45475a)).pt_2()
                     })
-                    .text_sm()
+                    .when(is_heading, |s| s.text_base())
+                    .when(!is_heading, |s| s.text_sm())
                     .text_color(rgb(colors::DARK_TEXT_MUTED))
                     .child(text.clone())
             }
@@ -1225,8 +1247,8 @@ impl MainWindow {
                             .gap_4()
                             .text_xs()
                             .text_color(rgb(colors::DARK_TEXT_MAIN))
-                            .child("2024/03/15 10:24:00")
-                            .child(div().text_color(rgb(colors::DARK_TEXT_MUTED)).child(if is_zh { "修改日期：2024/03/15 11:32:00" } else { "Modified: 2024/03/15 11:32:00" })),
+                            .child("2018/10/5 3:49:57")
+                            .child(div().text_color(rgb(colors::DARK_TEXT_MUTED)).child(if is_zh { "修改日期：2018/10/5 3:49:57" } else { "Modified: 2018/10/5 3:49:57" })),
                     ),
             )
             .child(
@@ -1235,7 +1257,7 @@ impl MainWindow {
                     .items_center()
                     .gap_3()
                     .child(div().w(px(80.0)).text_xs().text_color(rgb(colors::DARK_TEXT_MUTED)).child(if is_zh { "应用程序：" } else { "Application:" }))
-                    .child(div().text_xs().text_color(rgb(colors::DARK_TEXT_MAIN)).child("reTranslate Desktop Engine v0.1.0")),
+                    .child(div().text_xs().text_color(rgb(colors::DARK_TEXT_MAIN)).child("Pscript5.dll Version 5.2.2")),
             )
     }
 
@@ -1610,7 +1632,15 @@ impl MainWindow {
             .map(|p| p.display().to_string())
             .unwrap_or_else(|| "/workspace/docs/books/virtualization/lec13-VM1.pdf".to_string());
 
-        let total_chapters = self.active_document.as_ref().map(|d| d.chapters.len()).unwrap_or(0);
+        let pages_text = if let Some(doc) = &self.active_document {
+            if doc.id == "sample_doc_001" {
+                if is_zh { "13 页 (幻灯版式)".to_string() } else { "13 Pages (Slide)".to_string() }
+            } else {
+                format!("{} {}", doc.chapters.len(), if is_zh { "章节/页" } else { "Chapters/Pages" })
+            }
+        } else {
+            if is_zh { "13 页 (幻灯版式)".to_string() } else { "13 Pages (Slide)".to_string() }
+        };
 
         div()
             .flex()
@@ -1647,19 +1677,19 @@ impl MainWindow {
                             .flex()
                             .justify_between()
                             .gap_4()
-                            .child(self.render_spec_badge(if is_zh { "PDF 制作程序" } else { "Producer" }, "reTranslate Native v0.1.0"))
-                            .child(self.render_spec_badge(if is_zh { "规范版本" } else { "Specification" }, "PDF 1.7 / EPUB 3.0"))
+                            .child(self.render_spec_badge(if is_zh { "PDF 制作程序" } else { "Producer" }, "Acrobat Distiller 18.0"))
+                            .child(self.render_spec_badge(if is_zh { "规范版本" } else { "Specification" }, "1.7 (Acrobat 8.x)"))
                             .child(self.render_spec_badge(if is_zh { "文件大小" } else { "File Size" }, "317.87 KB (325,500 字节)"))
-                            .child(self.render_spec_badge(if is_zh { "总章节/页数" } else { "Chapters/Pages" }, &format!("{} 章节 (流式版式)", total_chapters))),
+                            .child(self.render_spec_badge(if is_zh { "总页数" } else { "Pages" }, &pages_text)),
                     )
                     .child(
                         div()
                             .flex()
                             .justify_between()
                             .gap_4()
-                            .child(self.render_spec_badge(if is_zh { "物理页面大小" } else { "Page Geometry" }, "27.94 × 21.59 厘米 (横向 Letter 宽版)"))
-                            .child(self.render_spec_badge(if is_zh { "加标签的文档" } else { "Tagged Document" }, if is_zh { "是 (语义树结构已提取)" } else { "Yes (Tagged)" }))
-                            .child(self.render_spec_badge(if is_zh { "快速 Web 查看" } else { "Fast Web View" }, if is_zh { "是 (流式按需加载)" } else { "Yes (Linearized)" })),
+                            .child(self.render_spec_badge(if is_zh { "物理页面大小" } else { "Page Geometry" }, "27.937 × 21.587 厘米 (横向 Letter 宽版)"))
+                            .child(self.render_spec_badge(if is_zh { "加标签的 PDF" } else { "Tagged PDF" }, if is_zh { "否" } else { "No" }))
+                            .child(self.render_spec_badge(if is_zh { "快速 Web 查看" } else { "Fast Web View" }, if is_zh { "否 (未线性化)" } else { "No (Not Linearized)" })),
                     )
                     .child(
                         div()
